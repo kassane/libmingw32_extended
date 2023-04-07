@@ -1,0 +1,24 @@
+name: build
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      - uses: goto-bus-stop/setup-zig@v2
+        with:
+          version: master
+      
+      - name: Build Summary
+        run: zig build -Doptimize=ReleaseSafe -DTests -fsummary -freference-trace
+      
+      - name: Test memory map
+        run: ./zig-out/bin/test_mmap.exe
+
+      - name: Test process_vm_readv
+        run: zig build test_process_vm_readv -DTests -Doptimize=ReleaseSafe -- 26831 0x00007efbf7fd7000 10
