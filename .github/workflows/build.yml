@@ -18,7 +18,7 @@ jobs:
         run: zig build -Doptimize=ReleaseSafe -DTests -fsummary -freference-trace
       
       - name: Test memory map
-        run: ./zig-out/bin/test_mmap.exe
+        run: zig build test_mmap -DTests -Doptimize=ReleaseSafe
 
       - name: Test process_vm_readv
         run: zig build test_process_vm_readv -DTests -Doptimize=ReleaseSafe -- 26831 0x00007efbf7fd7000 10

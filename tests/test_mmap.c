@@ -4,31 +4,39 @@
 #include <unistd.h>
 
 int main() {
-   const int page_size = getpagesize();
-    const int file_size = page_size * 2;
+    const int page_size = getpagesize();
+    const int array_size = 10;
+    const int array_bytes = sizeof(int) * array_size;
     const int offset = 0;
     const int protection = PROT_READ | PROT_WRITE;
     const int flags = MAP_PRIVATE | MAP_ANONYMOUS;
 
-    char* file_contents = mmap(NULL, file_size, protection, flags, -1, offset);
-    if (file_contents == MAP_FAILED) {
-        perror("Error mmapping the file");
+    int* array;
+    if (asprintf((char**)&array, "%0*c", array_bytes, '\0') == -1) {
+        perror("Error allocating the array");
         exit(EXIT_FAILURE);
     }
 
-    // Allocate the string dynamically using asprintf
-    if (asprintf(&file_contents, "Hello, world!") == -1) {
-        perror("Error allocating the string");
+    array = (int*) mmap(NULL, array_bytes, protection, flags, -1, offset);
+    if (array == MAP_FAILED) {
+        perror("Error mmapping the array");
         exit(EXIT_FAILURE);
     }
 
-    printf("\n%s\n", file_contents);
-
-    if (munmap(file_contents, file_size) == -1) {
-        perror("Error un-mmapping the file");
-        exit(EXIT_FAILURE);
+    // Initialize the array contents
+    for (int i = 0; i < array_size; i++) {
+        array[i] = i * i;
     }
 
+    // Print the array contents
+    for (int i = 0; i < array_size; i++) {
+        printf("array[%d] = %d\n", i, array[i]);
+    }
+
+    if (munmap(array, array_bytes) == -1) {
+        perror("Error un-mmapping the array");
+        exit(EXIT_FAILURE);
+    }
 
     return 0;
 }
