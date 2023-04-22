@@ -1,10 +1,10 @@
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/mman.h>
 #include <unistd.h>
 
 int main() {
-    const int page_size = getpagesize();
     const int array_size = 10;
     const int array_bytes = sizeof(int) * array_size;
     const int offset = 0;

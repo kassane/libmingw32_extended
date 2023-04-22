@@ -17,11 +17,11 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
-    libposixGW.want_lto = false;
     if (optimize == .Debug or optimize == .ReleaseSafe)
         libposixGW.bundle_compiler_rt = true
     else
         libposixGW.strip = true;
+    libposixGW.want_lto = false;
     libposixGW.addIncludePath("include");
     libposixGW.defineCMacro("__USE_MINGW_ANSI_STDIO", "1");
     libposixGW.addCSourceFiles(&.{
@@ -51,8 +51,14 @@ pub fn build(b: *std.Build) void {
         "-Wall",
         "-Wextra",
     });
-    libposixGW.installHeadersDirectory("include", "");
+    const winpthreads_dep = b.dependency("winpthreads", .{
+        .optimize = optimize,
+    });
+    const winpthreads = winpthreads_dep.artifact("winpthreads");
+    libposixGW.linkLibrary(winpthreads);
+    libposixGW.installLibraryHeaders(winpthreads);
     libposixGW.linkLibC();
+    libposixGW.installHeadersDirectory("include", "");
     b.installArtifact(libposixGW);
 
     if (tests) {
@@ -87,7 +93,7 @@ fn buildExe(b: *std.Build, lib: *std.Build.CompileStep, binfo: BuildInfo) void {
     );
     exe.linkLibC();
     b.installArtifact(exe);
-    
+
     const run_cmd = b.addRunArtifact(exe);
 
     run_cmd.step.dependOn(b.getInstallStep());
