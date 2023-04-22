@@ -53,7 +53,7 @@ pub fn build(b: *std.Build) void {
     });
     libposixGW.installHeadersDirectory("include", "");
     libposixGW.linkLibC();
-    libposixGW.install();
+    b.installArtifact(libposixGW);
 
     if (tests) {
         buildExe(b, libposixGW, .{
@@ -86,8 +86,9 @@ fn buildExe(b: *std.Build, lib: *std.Build.CompileStep, binfo: BuildInfo) void {
         },
     );
     exe.linkLibC();
-    exe.install();
-    const run_cmd = exe.run();
+    b.installArtifact(exe);
+    
+    const run_cmd = b.addRunArtifact(test_exe);
 
     run_cmd.step.dependOn(b.getInstallStep());
 
