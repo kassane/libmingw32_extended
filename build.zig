@@ -88,7 +88,7 @@ fn buildExe(b: *std.Build, lib: *std.Build.CompileStep, binfo: BuildInfo) void {
     exe.linkLibC();
     b.installArtifact(exe);
     
-    const run_cmd = b.addRunArtifact(test_exe);
+    const run_cmd = b.addRunArtifact(exe);
 
     run_cmd.step.dependOn(b.getInstallStep());
 
