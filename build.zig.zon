@@ -3,8 +3,8 @@
     .version = "1.0.0",
     .dependencies = .{
         .winpthreads = .{
-            .url = "https://github.com/kassane/winpthreads-zigbuild/archive/6d2c65913c41d22a9c57596c86fba3e079a809e7.tar.gz",
-            .hash = "122071e628085620f4abbf39c99bfd6fd07de1a50b6ef7ecc719e41331488a7e17c3",
+            .url = "https://github.com/kassane/winpthreads-zigbuild/archive/d9e249bc126d49d3f3b513525362e664e6efc889.tar.gz",
+            .hash = "12206485bb32bb6b25a554a1d3ccdf479f3e8d3c7b39500480c300892a4c0390fb58",
         },
     },
 }

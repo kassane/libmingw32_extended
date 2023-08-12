@@ -6,10 +6,13 @@ pub fn build(b: *std.Build) void {
 
     const tests = b.option(bool, "Tests", "Build Tests [default: false]") orelse false;
 
-    const target: std.zig.CrossTarget = .{
-        .os_tag = .windows,
-        .abi = .gnu,
-    };
+    const target = b.standardTargetOptions(.{
+        .default_target = .{
+            .cpu_arch = .x86_64,
+            .os_tag = .windows,
+            .abi = .gnu,
+        },
+    });
     const optimize = b.standardOptimizeOption(.{});
 
     const libposixGW = b.addStaticLibrary(.{
@@ -17,12 +20,13 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
-    if (optimize == .Debug or optimize == .ReleaseSafe)
-        libposixGW.bundle_compiler_rt = true
-    else
-        libposixGW.strip = true;
+
+    switch (optimize) {
+        .Debug, .ReleaseSafe => libposixGW.bundle_compiler_rt = true,
+        else => libposixGW.strip = true,
+    }
     libposixGW.want_lto = false;
-    libposixGW.addIncludePath("include");
+    libposixGW.addIncludePath(.{ .path = "include" });
     libposixGW.defineCMacro("__USE_MINGW_ANSI_STDIO", "1");
     libposixGW.addCSourceFiles(&.{
         "source/writev.c",
@@ -53,6 +57,7 @@ pub fn build(b: *std.Build) void {
     });
     const winpthreads_dep = b.dependency("winpthreads", .{
         .optimize = optimize,
+        .target = target,
     });
     const winpthreads = winpthreads_dep.artifact("winpthreads");
     libposixGW.linkLibrary(winpthreads);
@@ -73,7 +78,7 @@ pub fn build(b: *std.Build) void {
     }
 }
 
-fn buildExe(b: *std.Build, lib: *std.Build.CompileStep, binfo: BuildInfo) void {
+fn buildExe(b: *std.Build, lib: *std.Build.Step.Compile, binfo: BuildInfo) void {
     const exe = b.addExecutable(.{
         .name = binfo.name,
         .target = lib.target,
@@ -82,15 +87,18 @@ fn buildExe(b: *std.Build, lib: *std.Build.CompileStep, binfo: BuildInfo) void {
     if (lib.optimize != .Debug)
         exe.strip = true;
     exe.want_lto = false;
-    exe.addIncludePath("include");
+    for (lib.include_dirs.items) |include| {
+        exe.include_dirs.append(include) catch {};
+    }
     exe.linkLibrary(lib);
-    exe.addCSourceFile(
-        binfo.file,
-        &.{
+    exe.addCSourceFile(.{
+        .file = .{ .path = binfo.file },
+        .flags = &.{
             "-Wall",
             "-Wextra",
+            "-Wpedantic",
         },
-    );
+    });
     exe.linkLibC();
     b.installArtifact(exe);
 
@@ -102,7 +110,7 @@ fn buildExe(b: *std.Build, lib: *std.Build.CompileStep, binfo: BuildInfo) void {
         run_cmd.addArgs(args);
     }
 
-    const run_step = b.step(binfo.name, b.fmt("Run the {s}", .{binfo.name}));
+    const run_step = b.step(binfo.name, b.fmt("Run the {s} app.", .{binfo.name}));
     run_step.dependOn(&run_cmd.step);
 }
 
@@ -117,7 +125,7 @@ fn checkVersion() bool {
         return false;
     }
 
-    const needed_version = std.SemanticVersion.parse("0.11.0-dev.2191") catch unreachable;
+    const needed_version = std.SemanticVersion.parse("0.11.0") catch unreachable;
     const version = builtin.zig_version;
     const order = version.order(needed_version);
     return order != .lt;
